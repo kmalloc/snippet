@@ -40,6 +40,9 @@ getToken = do
 -- main --
 main = do
 putStrLn "hello, world\n"
+a <- return "hell"
+b <- return "yeah"
+putStrLn (a ++ " " ++ b ++ "\n")
 getToken
 {- putStrLn "hello again, please input your email:\n" -}
 {- name <- getLine -}
