@@ -1,5 +1,4 @@
 #include <iostream>
-// #include <thread>
 #include <pthread.h>
 
 using namespace std;
@@ -11,7 +10,6 @@ void* foo1(void*)
 {
     g_x = 42;
     g_a = g_y;
-
     return NULL;
 }
 
