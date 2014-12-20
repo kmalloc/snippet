@@ -1,17 +1,15 @@
 #include <iostream>
-// #include <thread>
 #include <pthread.h>
 
 using namespace std;
 
-volatile int g_x = 0, g_y = 0;
-volatile int g_a = 0, g_b = 0;
+volatile int g_x __attribute__((align(8))) = 0, g_y __attribute__((align(8))) = 0;
+volatile int g_a __attribute__((align(8))) = 0, g_b __attribute__((align(8))) = 0;
 
 void* foo1(void*)
 {
     g_x = 42;
     g_a = g_y;
-
     return NULL;
 }
 

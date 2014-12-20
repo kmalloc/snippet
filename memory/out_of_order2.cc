@@ -56,22 +56,8 @@ void foo4()
     if (g_y3.load(order) != 2) g_reorder++;
 }
 
-
 int main()
 {
-    /*
-    for (int i = 0; i < 10000; ++i)
-    {
-        g_x = g_y = g_a = g_b = 0;
-        thread t1(&foo1);
-        thread t2(&foo2);
-
-        t1.join();
-        t2.join();
-        if (g_a == 0 && g_b == 0) cout << "g_a == g_b == 0" << endl;
-    }
-    */
-
     for (int i = 0; i < 1000000; ++i)
     {
         g_a2 = 0;
@@ -88,20 +74,6 @@ int main()
             cout << "g_a2 == g_b2 == 0" << endl;
         }
     }
-
-    /*
-    for (int i = 0; i < 100000; ++i)
-    {
-        g_x3 = 0; g_y3 = 0;
-
-        thread t1(&foo3);
-        thread t2(&foo4);
-
-        t1.join();
-        t2.join();
-    }
-    cout << "reorder found:" << g_reorder << endl;
-    */
 
     return 0;
 }
