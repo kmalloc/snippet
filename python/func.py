@@ -18,6 +18,12 @@ class DummyClass(object):
     def SetAge(self, age):
         self.__age = age
 
+    def __str__(self):
+        return "dummy string"
+
+    def __len__(self):
+        return 32
+
 
 def print_cs(c, a = -1):
     c.Print("")
@@ -26,9 +32,13 @@ def print_cs(c, a = -1):
         c.Print("after set age")
 
 
-print "dir(DummyClass):", dir(DummyClass)
-
 c = DummyClass(23)
 
 print_cs(c)
 print_cs(c, 32)
+
+print "len of DummyClass:" + str(len(c))
+print "str of DummyClass:" + str(c)
+
+print "show properties of DummyClass"
+print "dir(DummyClass):", dir(DummyClass)
