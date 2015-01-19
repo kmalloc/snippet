@@ -12,10 +12,10 @@ class DummyClass(object):
     def __init__(self, age):
         self.__age = age
 
-    def Print(self, extra):
+    def prt(self, extra):
         print "age:", self.__age, ", extra info:", extra
 
-    def SetAge(self, age):
+    def setAge(self, age):
         self.__age = age
 
     def __str__(self):
@@ -26,10 +26,10 @@ class DummyClass(object):
 
 
 def print_cs(c, a = -1):
-    c.Print("")
+    c.prt("")
     if a > 0:
-        c.SetAge(a)
-        c.Print("after set age")
+        c.setAge(a)
+        c.prt("after set age")
 
 
 c = DummyClass(23)
