@@ -43,7 +43,7 @@ def view_file(fv, path):
 
         print message
 
-        user_input = raw_input("\n select file or dir to open:")
+        user_input = raw_input("\n select file or dir to open(input 0 to exit):")
         try:
             counter = int(user_input)
         except TypeError:
@@ -60,6 +60,7 @@ def view_file(fv, path):
             hf.close()
         else:
             path = next_path
+
 
 filev = FileViewer()
 view_file(filev, ".")
