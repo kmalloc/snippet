@@ -54,7 +54,7 @@ def view_file(fv, path):
 
         next_path = fv.get_path_by_id(counter - 1)
         if os.path.isfile(next_path):
-            print "file to open:" + path
+            print "\n file to open:" + path + "\n"
             hf = open(next_path, "r")
             print hf.read()
             hf.close()
