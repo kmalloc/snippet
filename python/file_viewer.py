@@ -27,6 +27,7 @@ class FileViewer(object):
 
 def view_file(fv, path):
 
+    path = os.path.abspath(path)
     while len(path) > 0:
         files = fv.open_dir(path)
         counter = 1
@@ -51,8 +52,11 @@ def view_file(fv, path):
 
         if counter == 0:
             break
+        elif counter == -1:
+            next_path = os.path.dirname(path)
+        else:
+            next_path = fv.get_path_by_id(counter - 1)
 
-        next_path = fv.get_path_by_id(counter - 1)
         if os.path.isfile(next_path):
             print "\n file to open:" + path + "\n"
             hf = open(next_path, "r")
