@@ -5,3 +5,4 @@
 */*.swp
 */hello
 */**/*.so
+python/.idea/*
