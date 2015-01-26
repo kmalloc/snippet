@@ -11,6 +11,9 @@ int main()
 
     a = caller(1);
     printf("call caller() in main:%d\n", a);
+
+    static const int b = 0b1011;
+    printf("literal b = %d\n", b);
     return 0;
 }
 
