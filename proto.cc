@@ -9,7 +9,7 @@ struct MatchType<T, T>
     enum { value = true };
 };
 
-template <typename T>
+template<typename T>
 struct IsMatchExist
 {
     typedef char small;
@@ -21,6 +21,19 @@ struct IsMatchExist
     enum { value = sizeof(test<T>(0)) == sizeof(small) };
 };
 
+template<typename T>
+struct HasResult
+{
+    typedef char small;
+    struct big { char d[2]; };
+
+    template<typename T2> static big  test(...);
+    template<typename T2> static small test(typename T2::result*);
+
+    enum { value = sizeof(test<T>(0)) == sizeof(small) };
+};
+
+//primary definition
 template <typename T1, typename T2, typename D = void>
 struct CheckMatch
 {
@@ -46,35 +59,68 @@ struct MatchType
     enum { value = CheckMatch<T1, T2>::value };
 };
 
+template<bool b1, typename T1, bool b2, typename T2> struct TypeSelector;
+
+template<typename T1, bool b2, typename T2>
+struct TypeSelector<true, T1, b2, T2>
+{
+    typedef T1 type;
+};
+
+template<typename T1, typename T2>
+struct TypeSelector<false, T1, true, T2>
+{
+    typedef T2 type;
+};
+
+// declaration
+template<typename T, typename D = void> struct ResultOf;
+
+template<typename T>
+struct ResultOf<T, typename std::enable_if<HasResult<T>::value>::type>
+{
+    typedef typename T::result type;
+};
+
 // define an or construct, similar construct should be defined likewise
 // user defined construct should contain a template class named Match
 // TODO, and construct
-template<bool b1, bool b2>
-struct EvalOr
-{
-    enum { value = b2 };
-};
-
-template<bool b>
-struct EvalOr<true, b>
-{
-    enum { value = true };
-};
-
 template<typename L, typename R>
 struct OrType
 {
     template<typename T>
     struct Match
     {
-        enum { value = EvalOr<MatchType<L, T>::value,
-            MatchType<R, T>::value>::value };
+        enum { value = MatchType<L, T>::value || MatchType<R, T>::value };
     };
+
+    template<typename T>
+    typename ResultOf<typename
+    TypeSelector<MatchType<L, T>::value, L, MatchType<R, T>::value, R>::type
+    >::type operator()(const T& exp)
+    {
+        if (MatchType<L, T>::value) return L()(exp);
+        if (MatchType<R, T>::value) return R()(exp);
+    }
 };
 
 
 // test data, tree base construct
-struct test {};
+struct test
+{
+    typedef unsigned char result;
+
+    template<typename E>
+    unsigned char operator()(const E& exp) { return 42; }
+};
+
+struct test2
+{
+    typedef int result;
+
+    template<typename E>
+    int operator()(const E& exp) { return 0x200; }
+};
 
 template <typename T>
 struct wrap {};
@@ -100,7 +146,9 @@ int main()
     cout << "char vs bool:" << bm << endl;
 
     cout << "is grammar has match:" << IsMatchExist<grammar>::value << endl;
-    cout << "CheckMatch for <grammar, test>:" << CheckMatch<OrType<OrType<int, test>, OrType<double, test>>, test>::value << endl;
+
+    bm = CheckMatch<OrType<OrType<int, test>, OrType<double, test>>, test>::value;
+    cout << "CheckMatch for <grammar, test>:" << bm << endl;
 
     cout << "is or construct has match, expect:true, actual:" <<
         IsMatchExist<OrType<int, OrType<double, int>>>::value << endl;
@@ -160,6 +208,23 @@ int main()
         wrap2<int, char*>
             >::value;
     cout << "grammar9 test, expect: false, actual:" << bm << endl;
+
+    bm = MatchType<OrType<test, test2>, test>::value;
+    cout << "grammar9 test, expect: true, actual:" << bm << endl;
+
+    cout << "is struct test has result type, expected:true, actual:"
+        << HasResult<test>::value << endl;
+
+    cout << "is struct test2 has result type, expected:true, actual:"
+        << HasResult<test2>::value << endl;
+
+    int res = OrType<test, test2>()(test());
+    cout << "evaluating test from OrType<test, test2>, expected:42, actual:"
+        << res << endl;
+
+    res = OrType<test, test2>()(test2());
+    cout << "evaluating test2 from OrType<test, test2>, expected:0x200, actual:"
+        << hex << res << endl;
 
     return 0;
 }
