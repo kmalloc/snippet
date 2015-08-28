@@ -46,6 +46,10 @@ struct CheckMatch<T1, T2, typename std::enable_if<IsMatchExist<T1>::value>::type
     enum { value = T1::template Match<T2>::value };
 };
 
+// following is not really necessary for matching type,
+// since usually it is true to have one type matchs another,
+// but the reverse is not required at the same time,
+// here just implement it for fun and for testing.
 template <typename T1, typename T2>
 struct CheckMatch<T1, T2,
     typename std::enable_if<IsMatchExist<T2>::value && !IsMatchExist<T1>::value>::type>
@@ -94,13 +98,32 @@ struct OrType
         enum { value = MatchType<L, T>::value || MatchType<R, T>::value };
     };
 
+    template<typename T, typename D=void> struct Evaluator;
+
+    template<typename T>
+    struct Evaluator<T, typename std::enable_if<MatchType<L, T>::value>::type>
+    {
+        static typename ResultOf<L>::type Eval(const T& exp)
+        {
+            return L()(exp);
+        }
+    };
+
+    template<typename T>
+    struct Evaluator<T, typename std::enable_if<MatchType<R, T>::value>::type>
+    {
+        static typename ResultOf<R>::type Eval(const T& exp)
+        {
+            return R()(exp);
+        }
+    };
+
     template<typename T>
     typename ResultOf<typename
     TypeSelector<MatchType<L, T>::value, L, MatchType<R, T>::value, R>::type
     >::type operator()(const T& exp)
     {
-        if (MatchType<L, T>::value) return L()(exp);
-        if (MatchType<R, T>::value) return R()(exp);
+        return Evaluator<T>::Eval(exp);
     }
 };
 
@@ -108,10 +131,10 @@ struct OrType
 // test data, tree base construct
 struct test
 {
-    typedef unsigned char result;
+    typedef void* result;
 
     template<typename E>
-    unsigned char operator()(const E& exp) { return 42; }
+    result operator()(const E& exp) { return reinterpret_cast<void*>(42); }
 };
 
 struct test2
@@ -119,7 +142,7 @@ struct test2
     typedef int result;
 
     template<typename E>
-    int operator()(const E& exp) { return 0x200; }
+    result operator()(const E& exp) { return 0x200; }
 };
 
 template <typename T>
@@ -218,13 +241,13 @@ int main()
     cout << "is struct test2 has result type, expected:true, actual:"
         << HasResult<test2>::value << endl;
 
-    int res = OrType<test, test2>()(test());
+    auto res = OrType<test, test2>()(test());
     cout << "evaluating test from OrType<test, test2>, expected:42, actual:"
         << res << endl;
 
-    res = OrType<test, test2>()(test2());
+    auto res2 = OrType<test, test2>()(test2());
     cout << "evaluating test2 from OrType<test, test2>, expected:0x200, actual:"
-        << hex << res << endl;
+        << hex << res2 << endl;
 
     return 0;
 }
