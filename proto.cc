@@ -16,19 +16,19 @@ struct IsMatchExist
     struct big { char d[2]; };
 
     template<typename T2> static big  test(...);
-    template<typename T2> static small test(typename T2::template Match<int>*);
+    template<typename T2> static small test(typename T2::template Match<void>*);
 
     enum { value = sizeof(test<T>(0)) == sizeof(small) };
 };
 
 template<typename T>
-struct HasResult
+struct HasResultOf
 {
     typedef char small;
     struct big { char d[2]; };
 
     template<typename T2> static big  test(...);
-    template<typename T2> static small test(typename T2::result*);
+    template<typename T2> static small test(typename T2::template result_of<void>*);
 
     enum { value = sizeof(test<T>(0)) == sizeof(small) };
 };
@@ -63,29 +63,6 @@ struct MatchType
     enum { value = CheckMatch<T1, T2>::value };
 };
 
-template<bool b1, typename T1, bool b2, typename T2> struct TypeSelector;
-
-template<typename T1, bool b2, typename T2>
-struct TypeSelector<true, T1, b2, T2>
-{
-    typedef T1 type;
-};
-
-template<typename T1, typename T2>
-struct TypeSelector<false, T1, true, T2>
-{
-    typedef T2 type;
-};
-
-// declaration
-template<typename T, typename D = void> struct ResultOf;
-
-template<typename T>
-struct ResultOf<T, typename std::enable_if<HasResult<T>::value>::type>
-{
-    typedef typename T::result type;
-};
-
 // define an or construct, similar construct should be defined likewise
 // user defined construct should contain a template class named Match
 // TODO, and construct
@@ -98,12 +75,37 @@ struct OrType
         enum { value = MatchType<L, T>::value || MatchType<R, T>::value };
     };
 
-    template<typename T, typename D=void> struct Evaluator;
+    template<typename T, typename D = void> struct SelectType;
+
+    template<typename T>
+    struct SelectType<T, typename std::enable_if<MatchType<L, T>::value>::type>
+    {
+        typedef L type;
+    };
+
+    template<typename T>
+    struct SelectType<T, typename std::enable_if<MatchType<R, T>::value>::type>
+    {
+        typedef R type;
+    };
+
+    template<typename T>
+    struct result_of
+    {
+        using Type = typename SelectType<T>::type;
+        static_assert(HasResultOf<Type>::value,
+                "type of OrType<L, R> does not contain a result_of construct");
+
+        typedef typename Type::template result_of<T>::result result;
+    };
+
+    // evaluate a expression that is of type L or R
+    template<typename T, typename D = void> struct Evaluator;
 
     template<typename T>
     struct Evaluator<T, typename std::enable_if<MatchType<L, T>::value>::type>
     {
-        static typename ResultOf<L>::type Eval(const T& exp)
+        static typename result_of<T>::result Eval(const T& exp)
         {
             return L()(exp);
         }
@@ -112,16 +114,14 @@ struct OrType
     template<typename T>
     struct Evaluator<T, typename std::enable_if<MatchType<R, T>::value>::type>
     {
-        static typename ResultOf<R>::type Eval(const T& exp)
+        static typename result_of<T>::result Eval(const T& exp)
         {
             return R()(exp);
         }
     };
 
     template<typename T>
-    typename ResultOf<typename
-    TypeSelector<MatchType<L, T>::value, L, MatchType<R, T>::value, R>::type
-    >::type operator()(const T& exp)
+    typename result_of<T>::result operator()(const T& exp)
     {
         return Evaluator<T>::Eval(exp);
     }
@@ -131,18 +131,39 @@ struct OrType
 // test data, tree base construct
 struct test
 {
-    typedef void* result;
+    template<typename T>
+    struct result_of
+    {
+        typedef void* result;
+    };
 
     template<typename E>
-    result operator()(const E& exp) { return reinterpret_cast<void*>(42); }
+    typename result_of<E>::result operator()(const E& exp)
+    { return reinterpret_cast<void*>(42); }
 };
 
 struct test2
 {
-    typedef int result;
+    template<typename T>
+    struct result_of
+    {
+        typedef int result;
+    };
 
     template<typename E>
-    result operator()(const E& exp) { return 0x200; }
+    typename result_of<E>::result operator()(const E& exp) { return 0x200; }
+};
+
+struct test3
+{
+    template<typename T>
+    struct result_of
+    {
+        typedef test result;
+    };
+
+    template<typename E>
+    typename result_of<E>::result operator()(const E& exp) { return test(); }
 };
 
 template <typename T>
@@ -159,6 +180,12 @@ struct grammar
       >
 {
 };
+
+ostream& operator<<(ostream& out, const test& t)
+{
+    out << "print test object, addr:" << &t << endl;
+    return out;
+}
 
 int main()
 {
@@ -236,10 +263,10 @@ int main()
     cout << "grammar9 test, expect: true, actual:" << bm << endl;
 
     cout << "is struct test has result type, expected:true, actual:"
-        << HasResult<test>::value << endl;
+        << HasResultOf<test>::value << endl;
 
     cout << "is struct test2 has result type, expected:true, actual:"
-        << HasResult<test2>::value << endl;
+        << HasResultOf<test2>::value << endl;
 
     auto res = OrType<test, test2>()(test());
     cout << "evaluating test from OrType<test, test2>, expected:42, actual:"
@@ -248,6 +275,9 @@ int main()
     auto res2 = OrType<test, test2>()(test2());
     cout << "evaluating test2 from OrType<test, test2>, expected:0x200, actual:"
         << hex << res2 << endl;
+
+    auto res3 = OrType<test, OrType<test2, test3>>()(test3());
+    cout << "printing res3, expect formatted output," << res3 << endl;
 
     return 0;
 }
