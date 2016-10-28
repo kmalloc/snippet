@@ -308,10 +308,9 @@ static void ipc_op(bool create, const char* pid) {
     }
 }
 
-
-static void cgroup_op(const char* cg_file) {
+static void cgroup_op(const char* type, const char* cg_file) {
     if (cg_file) {
-        int fd = open(cg_file, 'a');
+        int fd = open(cg_file, O_RDWR);
         if (fd < 0) {
             printf("open %s failes\n", cg_file);
             return;
@@ -326,7 +325,38 @@ static void cgroup_op(const char* cg_file) {
         close(fd);
     }
 
-    while (1) {
+    if (!strcmp(type, "cpu")) {
+        while (1) {
+        }
+    } else if (!strcmp(type, "mem")) {
+        while (1) {
+            if (!malloc(1024)) {
+                sleep(10);
+            }
+        }
+    } else if (!strcmp(type, "bio")) {
+        int fd = open("./dummy_test_io.dat", O_CREAT|O_RDWR|O_TRUNC);
+        if (fd < 0) {
+            printf("open test file failed:%s\n", strerror(errno));
+            return;
+        }
+
+        size_t total_write = 0;
+        static unsigned char s_dat[1024*1024];
+
+        while (total_write < 16*1024*1024*1024ull) {
+            int r = write(fd, s_dat, sizeof(s_dat));
+            if (r < 0) {
+                printf("writting error occurs, cur total:%d\n", total_write);
+            } else {
+                total_write += r;
+            }
+        }
+
+        printf("writting done, cur total:%d\n", total_write);
+        close(fd);
+    } else {
+        printf("not supported type\n");
     }
 }
 
@@ -334,16 +364,16 @@ static void cgroup_op(const char* cg_file) {
 // get nmt namespace id from process: /proc/$pid/ns/mnt.
 //
 int main(int argc, char* argv[]) {
-    const static char* usage = "Usage: (cgroup cg_path), (ipc create(or no) pid), (mnt pid back(or null))\n";
+    const static char* usage = "Usage: (cgroup cpu(mem, bio) cg_path), (ipc create(or no) pid), (mnt pid back(or null))\n";
     if (argc <= 1) {
         printf(usage);
     } else if (!strcmp(argv[1], "ipc") && argc >= 3) {
         ipc_op(!strcmp(argv[2], "create"), argc == 4?argv[3]:NULL);
     } else if (!strcmp(argv[1], "mnt") && argc >= 3) {
         mnt_op(argv[2], argc == 4 && !strcmp(argv[3], "back"));
-    } else if (!strcmp(argv[1], "cgroup")) {
-        const char* cg = argc >= 3?argv[2]:NULL;
-        cgroup_op(cg);
+    } else if (!strcmp(argv[1], "cgroup") && argc >= 3) {
+        const char* cg = argc >= 4?argv[3]:NULL;
+        cgroup_op(argv[2], cg);
     } else {
         printf(usage);
     }
