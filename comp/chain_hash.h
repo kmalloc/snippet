@@ -35,17 +35,16 @@ struct chain_hash_t {
     uint32_t lru_timestamp;
 #endif
 
-    uint32_t num_bucket;
-    uint32_t num_entries;
+    uint32_t num_bucket; // number of buckets used for open chaining, chaining is achieved by masking the hash calculated for each key.
+    uint32_t num_entries; // total number of hash key allowed, this is the capacity of hashtable
 
     uint32_t key_len;
-    uint32_t occupied;
-    uint32_t hash_mask;
+    uint32_t occupied; // current total number of key stored
+    uint32_t hash_mask; // equal to num_bucket - 1
 
-    int32_t free_list;
-
-    uint32_t entry_list_off_;
-    uint32_t bucket_list_off_;
+    int32_t free_list; // for internal usage.
+    uint32_t entry_list_off_; // for internal usage
+    uint32_t bucket_list_off_; // for internal usage
 
 #ifdef __CHAIN_HASHTABLE_LRU__
     int32_t lru_list_head;
@@ -75,13 +74,16 @@ void* chain_hash_mem_alloc(uint32_t sz);
 void chain_hash_reset(struct chain_hash_t*);
 void chain_hash_destroy(struct chain_hash_t*);
 
+// num_entries: total size of the hash table.
+// num_bucket: num of bucket used for open chaining, the larger the better.
+// num_bucket will be rounded to power of 2.
 uint32_t chain_hash_calc_mem(uint32_t num_bucket, uint32_t num_entries, uint32_t key_len);
 struct chain_hash_t* chain_hash_create(uint32_t num_bucket, uint32_t num_entries, uint32_t key_len);
 struct chain_hash_t* chain_hash_create_with_mem(uint32_t num_bucket, uint32_t num_entries, uint32_t key_len, void* mem, uint32_t len);
 
-int32_t chain_hash_get_free_entry(const struct chain_hash_t* ht);
+// on success return index.
+// on failure return < 0
 int32_t chain_hash_add_key(struct chain_hash_t* ht, const void* key, uint32_t seed);
-
 int32_t chain_hash_lookup_key(struct chain_hash_t* ht, const void* key, uint32_t seed);
 int32_t chain_hash_delete_key(struct chain_hash_t* ht, const void* key, uint32_t seed);
 
@@ -95,6 +97,7 @@ int32_t chain_hash_entry_in_bucket(const struct chain_hash_t* ht, uint32_t hash)
 #endif
 
 #ifdef __CHAIN_HASHTABLE_LRU__
+// recycle at most max item.
 int chain_hash_do_lru_recycle(struct chain_hash_t* ht, int max);
 #endif
 

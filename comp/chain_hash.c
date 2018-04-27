@@ -682,10 +682,6 @@ int32_t chain_hash_entry_in_bucket(const struct chain_hash_t* ht, uint32_t hash)
 }
 #endif
 
-int32_t chain_hash_get_free_entry(const struct chain_hash_t* ht) {
-    return ht->free_list;
-}
-
 #ifdef __CHAIN_HASHTABLE_CNT_LRU__
 struct chain_hash_recycle_ret_t chain_hash_do_cnt_lru_recycle(
     struct chain_hash_t *ht, int bucket_id,
